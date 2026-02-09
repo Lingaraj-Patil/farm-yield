@@ -387,23 +387,28 @@ node scripts/seedData.js
 ## 📸 Screenshots
 
 ### **Home Dashboard**
-![Live Network Stats](./docs/screenshots/dashboard.png)
+<img width="1470" height="834" alt="Screenshot 2026-02-09 at 11 53 36 AM" src="https://github.com/user-attachments/assets/62a9174c-e01b-4127-bb8c-851f5a69f5c9" />
+
 *Real-time analytics showing active farmers, total yield, rewards distributed, and blockchain indicators*
 
 ### **Multi-Step Report Form**
-![Report Wizard](./docs/screenshots/report-wizard.png)
+<img width="1470" height="836" alt="Screenshot 2026-02-09 at 11 53 53 AM" src="https://github.com/user-attachments/assets/b6c43896-2f09-44bb-a806-5d84eea268e7" />
+
 *Intuitive 3-step submission wizard with GPS auto-location and drag-drop photo upload*
 
 ### **Verification System**
-![Report Card](./docs/screenshots/report-card.png)
+<img width="1470" height="837" alt="Screenshot 2026-02-09 at 11 54 46 AM" src="https://github.com/user-attachments/assets/fe2ec999-9661-4a51-9b0c-1d0fa7f9bd82" />
+
 *Enhanced report cards with fraud risk badges, reputation scores, and verification progress*
 
 ### **Gamified Profile**
-![Farmer Profile](./docs/screenshots/profile-dashboard.png)
+<img width="1470" height="839" alt="Screenshot 2026-02-09 at 11 55 07 AM" src="https://github.com/user-attachments/assets/7ed198f2-ff2e-460c-b4b4-0bd4b07959f4" />
+
 *Level-based progression system with NFT badges and performance analytics*
 
 ### **Interactive Map**
-![Map Visualization](./docs/screenshots/map-dashboard.png)
+<img width="1470" height="834" alt="Screenshot 2026-02-09 at 11 55 42 AM" src="https://github.com/user-attachments/assets/899308ec-34a8-4cfe-bc1a-3a05a4bf522e" />
+
 *Leaflet-powered heatmap showing geo-tagged reports across regions*
 
 ---
@@ -525,8 +530,6 @@ FarmYield is built with support from:
 
 **Built with ❤️ for farmers worldwide**
 
-[![Star on GitHub](https://img.shields.io/github/stars/yourusername/farm-yield?style=social)](https://github.com/yourusername/farm-yield)
-[![Follow on Twitter](https://img.shields.io/twitter/follow/farmyieldhq?style=social)](https://twitter.com/farmyieldhq)
 
 *Empowering 2.5 billion farmers, one blockchain at a time.* 🌾
 
