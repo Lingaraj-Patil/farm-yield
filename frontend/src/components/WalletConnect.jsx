@@ -40,7 +40,7 @@ const WalletConnect = () => {
       }
       return false;
     } catch (error) {
-      console.error('Signature auth failed:', error);
+      // Silent auth failure - fallback to basic login
       return false;
     } finally {
       setAuthenticating(false);
@@ -65,13 +65,13 @@ const WalletConnect = () => {
         performSignatureAuth(walletAddress).catch(() => {
           authAPI.login(walletAddress)
             .then(res => setUser(res.data.user))
-            .catch(err => console.error('Login failed:', err));
+            .catch(() => {/* Silent fail - user can retry wallet connection */});
         });
       }
 
       getBalance(walletAddress)
         .then(bal => setBalance(bal))
-        .catch(err => console.error('Balance fetch failed:', err));
+        .catch(() => setBalance(0));
     } else {
       setWalletHeader(null);
       clearToken();
@@ -81,7 +81,7 @@ const WalletConnect = () => {
   }, [connected, publicKey]);
 
   return (
-    <div className="flex items-center gap-4">
+    <div className="flex items-center gap-4" role="navigation" aria-label="Wallet connection">
       {authenticating && (
         <div className="flex items-center gap-2 text-sm text-gray-600">
           <Lock className="w-4 h-4 animate-pulse" />

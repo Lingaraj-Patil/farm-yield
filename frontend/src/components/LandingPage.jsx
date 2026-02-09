@@ -3,11 +3,12 @@
 // Marketing / Landing Page
 // ===================================
 
-import { useMemo } from 'react';
+import { useMemo, useState, useEffect } from 'react';
 import { useWallet } from '@solana/wallet-adapter-react';
 import { WalletMultiButton } from '@solana/wallet-adapter-react-ui';
-import { Sprout, ShieldCheck, Coins, MapPin, Users, ArrowRight } from 'lucide-react';
+import { Sprout, ShieldCheck, Coins, MapPin, Users, ArrowRight, TrendingUp, Zap, Globe, Award, Activity, CheckCircle } from 'lucide-react';
 import OfflineQueuePanel from './OfflineQueuePanel';
+import { fetchNetworkStats } from '../utils/networkStats';
 
 const FeatureCard = ({ icon: Icon, title, description }) => (
   <div className="bg-white rounded-xl shadow-md p-6 border border-gray-100">
@@ -33,6 +34,18 @@ const Step = ({ number, title, description }) => (
 
 const LandingPage = ({ onGetStarted }) => {
   const { connected } = useWallet();
+  const [networkStats, setNetworkStats] = useState(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const loadStats = async () => {
+      setLoading(true);
+      const stats = await fetchNetworkStats();
+      setNetworkStats(stats);
+      setLoading(false);
+    };
+    loadStats();
+  }, []);
 
   const stats = useMemo(() => [
     { label: 'Faster payouts', value: '< 60s' },
@@ -43,6 +56,153 @@ const LandingPage = ({ onGetStarted }) => {
   return (
     <div className="space-y-16">
       <OfflineQueuePanel />
+
+      {/* Live Network Stats - New Premium Section */}
+      <section className="relative overflow-hidden">
+        <div className="absolute inset-0 bg-gradient-to-br from-green-500/10 via-emerald-500/10 to-teal-500/10 rounded-3xl"></div>
+        <div className="relative bg-white/80 backdrop-blur-xl rounded-3xl shadow-2xl border border-green-100 p-8">
+          <div className="flex items-center justify-between mb-8">
+            <div>
+              <h2 className="text-3xl font-bold bg-gradient-to-r from-green-600 to-emerald-600 bg-clip-text text-transparent">
+                Live Network Stats
+              </h2>
+              <p className="text-gray-600 mt-2 flex items-center gap-2">
+                <Activity className="w-4 h-4 text-green-500 animate-pulse" />
+                Real-time blockchain metrics
+              </p>
+            </div>
+            <div className="hidden md:block">
+              <div className="flex items-center gap-2 px-4 py-2 bg-green-50 rounded-full border border-green-200">
+                <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
+                <span className="text-sm font-medium text-green-700">Live</span>
+              </div>
+            </div>
+          </div>
+
+          {loading ? (
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+              {[...Array(8)].map((_, i) => (
+                <div key={i} className="bg-gray-100 animate-pulse rounded-2xl p-6 h-32"></div>
+              ))}
+            </div>
+          ) : (
+            <>
+              {/* Primary Metrics */}
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+                <div className="group relative bg-gradient-to-br from-green-50 to-emerald-50 rounded-2xl p-6 border border-green-100 hover:shadow-lg transition-all duration-300 hover:-translate-y-1">
+                  <div className="flex items-start justify-between mb-3">
+                    <div className="p-2 bg-green-100 rounded-lg group-hover:scale-110 transition-transform">
+                      <Users className="w-5 h-5 text-green-600" />
+                    </div>
+                    <TrendingUp className="w-4 h-4 text-green-500 opacity-50" />
+                  </div>
+                  <div className="text-3xl font-bold text-gray-900 mb-1">
+                    {networkStats?.totalFarmers?.toLocaleString() || 0}
+                  </div>
+                  <div className="text-xs font-medium text-gray-600 uppercase tracking-wide">
+                    Farmers Onboarded
+                  </div>
+                </div>
+
+                <div className="group relative bg-gradient-to-br from-blue-50 to-cyan-50 rounded-2xl p-6 border border-blue-100 hover:shadow-lg transition-all duration-300 hover:-translate-y-1">
+                  <div className="flex items-start justify-between mb-3">
+                    <div className="p-2 bg-blue-100 rounded-lg group-hover:scale-110 transition-transform">
+                      <Sprout className="w-5 h-5 text-blue-600" />
+                    </div>
+                    <TrendingUp className="w-4 h-4 text-blue-500 opacity-50" />
+                  </div>
+                  <div className="text-3xl font-bold text-gray-900 mb-1">
+                    {networkStats?.totalYield?.toLocaleString() || 0}
+                    <span className="text-lg text-gray-500 ml-1">kg</span>
+                  </div>
+                  <div className="text-xs font-medium text-gray-600 uppercase tracking-wide">
+                    Total Yield Recorded
+                  </div>
+                </div>
+
+                <div className="group relative bg-gradient-to-br from-amber-50 to-yellow-50 rounded-2xl p-6 border border-amber-100 hover:shadow-lg transition-all duration-300 hover:-translate-y-1">
+                  <div className="flex items-start justify-between mb-3">
+                    <div className="p-2 bg-amber-100 rounded-lg group-hover:scale-110 transition-transform">
+                      <Coins className="w-5 h-5 text-amber-600" />
+                    </div>
+                    <TrendingUp className="w-4 h-4 text-amber-500 opacity-50" />
+                  </div>
+                  <div className="text-3xl font-bold text-gray-900 mb-1">
+                    {networkStats?.totalRewards || '0.00'}
+                    <span className="text-lg text-gray-500 ml-1">SOL</span>
+                  </div>
+                  <div className="text-xs font-medium text-gray-600 uppercase tracking-wide">
+                    Rewards Distributed
+                  </div>
+                </div>
+
+                <div className="group relative bg-gradient-to-br from-purple-50 to-pink-50 rounded-2xl p-6 border border-purple-100 hover:shadow-lg transition-all duration-300 hover:-translate-y-1">
+                  <div className="flex items-start justify-between mb-3">
+                    <div className="p-2 bg-purple-100 rounded-lg group-hover:scale-110 transition-transform">
+                      <CheckCircle className="w-5 h-5 text-purple-600" />
+                    </div>
+                    <Award className="w-4 h-4 text-purple-500 opacity-50" />
+                  </div>
+                  <div className="text-3xl font-bold text-gray-900 mb-1">
+                    {networkStats?.verificationRate || 0}%
+                  </div>
+                  <div className="text-xs font-medium text-gray-600 uppercase tracking-wide">
+                    Verified Reports
+                  </div>
+                </div>
+              </div>
+
+              {/* Blockchain Trust Indicators */}
+              <div className="bg-gradient-to-br from-gray-50 to-slate-50 rounded-2xl p-6 border border-gray-200">
+                <div className="flex items-center gap-3 mb-4">
+                  <div className="p-2 bg-gray-900 rounded-lg">
+                    <ShieldCheck className="w-5 h-5 text-white" />
+                  </div>
+                  <h3 className="text-lg font-bold text-gray-900">Blockchain Trust Indicators</h3>
+                </div>
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                  <div className="text-center p-4 bg-white rounded-xl border border-gray-100">
+                    <div className="text-2xl font-bold text-gray-900 mb-1">
+                      {networkStats?.cnftsMinted?.toLocaleString() || 0}
+                    </div>
+                    <div className="text-xs text-gray-600 flex items-center justify-center gap-1">
+                      <Zap className="w-3 h-3" />
+                      cNFTs Minted
+                    </div>
+                  </div>
+                  <div className="text-center p-4 bg-white rounded-xl border border-gray-100">
+                    <div className="text-2xl font-bold text-gray-900 mb-1">
+                      {networkStats?.onChainTransactions?.toLocaleString() || 0}
+                    </div>
+                    <div className="text-xs text-gray-600 flex items-center justify-center gap-1">
+                      <Activity className="w-3 h-3" />
+                      On-chain TX
+                    </div>
+                  </div>
+                  <div className="text-center p-4 bg-white rounded-xl border border-gray-100">
+                    <div className="text-2xl font-bold text-green-600 mb-1">
+                      {networkStats?.verifiedReports?.toLocaleString() || 0}
+                    </div>
+                    <div className="text-xs text-gray-600 flex items-center justify-center gap-1">
+                      <CheckCircle className="w-3 h-3" />
+                      Verified
+                    </div>
+                  </div>
+                  <div className="text-center p-4 bg-white rounded-xl border border-gray-100">
+                    <div className="text-2xl font-bold text-yellow-600 mb-1">
+                      {networkStats?.pendingReports?.toLocaleString() || 0}
+                    </div>
+                    <div className="text-xs text-gray-600 flex items-center justify-center gap-1">
+                      <Globe className="w-3 h-3" />
+                      Pending
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </>
+          )}
+        </div>
+      </section>
 
       {/* Hero */}
       <section className="bg-white rounded-2xl shadow-lg overflow-hidden">

@@ -8,6 +8,7 @@ import { useState, useEffect } from 'react';
 import { Filter, RefreshCw } from 'lucide-react';
 import { reportAPI } from '../utils/api';
 import ReportCard from './ReportCard';
+import { ListSkeleton } from './LoadingSkeleton';
 
 const ReportList = () => {
   const [reports, setReports] = useState([]);
@@ -97,12 +98,7 @@ const ReportList = () => {
 
       {/* Reports Grid */}
       {loading ? (
-        <div className="flex items-center justify-center py-12">
-          <div className="text-center">
-            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-green-600 mx-auto mb-4"></div>
-            <p className="text-gray-600">Loading reports...</p>
-          </div>
-        </div>
+        <ListSkeleton count={6} />
       ) : reports.length === 0 ? (
         <div className="bg-white rounded-lg shadow-lg p-12 text-center">
           <p className="text-gray-600">No reports found</p>

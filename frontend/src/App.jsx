@@ -3,21 +3,23 @@
 // Main Application Component
 // ===================================
 
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useState, lazy, Suspense } from 'react';
 import { ConnectionProvider, WalletProvider } from '@solana/wallet-adapter-react';
 import { WalletAdapterNetwork } from '@solana/wallet-adapter-base';
 import { PhantomWalletAdapter, SolflareWalletAdapter } from '@solana/wallet-adapter-wallets';
 import { WalletModalProvider } from '@solana/wallet-adapter-react-ui';
 import { clusterApiUrl } from '@solana/web3.js';
-import { Sprout, Map, FileText, Plus, Home, User } from 'lucide-react';
+import { Sprout, Map, FileText, Plus, Home, User, Loader } from 'lucide-react';
 import WalletConnect from './components/WalletConnect';
-import ReportForm from './components/ReportForm';
-import MapDashboard from './components/MapDashboard';
+import ReportFormWizard from './components/ReportFormWizard';
 import ReportList from './components/ReportList';
 import LandingPage from './components/LandingPage';
 import ProfileDashboard from './components/ProfileDashboard';
 import '@solana/wallet-adapter-react-ui/styles.css';
 import { processQueue } from './utils/offlineQueue';
+
+// Lazy load map component for better initial load performance
+const MapDashboard = lazy(() => import('./components/MapDashboard'));
 
 function App() {
   const [activeTab, setActiveTab] = useState('home');
@@ -49,7 +51,7 @@ function App() {
 
   useEffect(() => {
     const handleOnline = () => {
-      processQueue().catch((error) => console.error('Queue sync failed:', error));
+      processQueue().catch(() => {/* Silent fail - will retry on next online event */});
     };
 
     window.addEventListener('online', handleOnline);
@@ -72,7 +74,7 @@ function App() {
         <WalletModalProvider>
           <div className="min-h-screen bg-gradient-to-br from-green-50 to-blue-50">
             {/* Header */}
-            <header className="bg-white shadow-md">
+            <header className="bg-white shadow-md" role="banner">
               <div className="container mx-auto px-4 py-4">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-3">
@@ -114,11 +116,20 @@ function App() {
 
             {/* Content */}
             <main className="container mx-auto px-4 pb-12">
-              {activeTab === 'home' && <LandingPage onGetStarted={() => setActiveTab('form')} />}
-              {activeTab === 'form' && <ReportForm onSuccess={() => setActiveTab('reports')} />}
-              {activeTab === 'reports' && <ReportList />}
-              {activeTab === 'map' && <MapDashboard />}
-              {activeTab === 'profile' && <ProfileDashboard />}
+              <Suspense fallback={
+                <div className="flex items-center justify-center py-20">
+                  <div className="text-center">
+                    <Loader className="w-12 h-12 text-green-600 animate-spin mx-auto mb-4" />
+                    <p className="text-gray-600">Loading...</p>
+                  </div>
+                </div>
+              }>
+                {activeTab === 'home' && <LandingPage onGetStarted={() => setActiveTab('form')} />}
+                {activeTab === 'form' && <ReportFormWizard onSuccess={() => setActiveTab('reports')} />}
+                {activeTab === 'reports' && <ReportList />}
+                {activeTab === 'map' && <MapDashboard />}
+                {activeTab === 'profile' && <ProfileDashboard />}
+              </Suspense>
             </main>
 
             {/* Footer */}

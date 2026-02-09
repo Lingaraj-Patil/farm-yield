@@ -39,7 +39,7 @@ export const requestAirdrop = async (publicKey) => {
     await connection.confirmTransaction(signature);
     return signature;
   } catch (error) {
-    console.error('Airdrop failed:', error);
+    // Re-throw to let caller handle
     throw error;
   }
 };

@@ -119,8 +119,7 @@ const ReportForm = ({ onSuccess }) => {
       if (onSuccess) onSuccess(response.data.report);
       
     } catch (error) {
-      console.error('Submit error:', error);
-
+      // Handle offline vs server errors
       if (!navigator.onLine || !error.response) {
         await enqueueReport({ formData, images });
         await refreshQueueCount();
