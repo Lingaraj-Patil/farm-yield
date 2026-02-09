@@ -4,8 +4,158 @@
 // ===================================
 
 const express = require('express');
+const crypto = require('crypto');
+const jwt = require('jsonwebtoken');
+const nacl = require('tweetnacl');
+const bs58 = require('bs58');
 const router = express.Router();
-const  User  = require('../models/User');
+const User = require('../models/User');
+
+const NONCE_TTL_MINUTES = 10;
+
+const buildMessage = (walletAddress, nonce, issuedAt) => (
+  `FarmYield Authentication\nWallet: ${walletAddress}\nNonce: ${nonce}\nIssuedAt: ${issuedAt}`
+);
+
+const issueToken = (walletAddress) => {
+  if (!process.env.JWT_SECRET) {
+    throw new Error('JWT_SECRET is not configured');
+  }
+
+  return jwt.sign(
+    { walletAddress },
+    process.env.JWT_SECRET,
+    { expiresIn: process.env.JWT_EXPIRES_IN || '7d' }
+  );
+};
+
+// Create authentication challenge
+router.post('/challenge', async (req, res) => {
+  try {
+    const { walletAddress } = req.body;
+
+    if (!walletAddress) {
+      return res.status(400).json({
+        success: false,
+        message: 'Wallet address is required'
+      });
+    }
+
+    let user = await User.findOne({ walletAddress });
+    if (!user) {
+      user = new User({
+        walletAddress,
+        username: `Farmer_${walletAddress.slice(0, 6)}`
+      });
+    }
+
+    const nonce = crypto.randomBytes(16).toString('hex');
+    const issuedAt = new Date().toISOString();
+
+    user.authNonce = nonce;
+    user.authNonceIssuedAt = new Date(issuedAt);
+    await user.save();
+
+    const message = buildMessage(walletAddress, nonce, issuedAt);
+
+    res.json({
+      success: true,
+      message,
+      nonce,
+      issuedAt
+    });
+  } catch (error) {
+    console.error('Challenge error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to create challenge',
+      error: error.message
+    });
+  }
+});
+
+// Verify signature and issue JWT
+router.post('/verify', async (req, res) => {
+  try {
+    const { walletAddress, signature, message } = req.body;
+
+    if (!walletAddress || !signature || !message) {
+      return res.status(400).json({
+        success: false,
+        message: 'walletAddress, signature, and message are required'
+      });
+    }
+
+    const user = await User.findOne({ walletAddress });
+    if (!user || !user.authNonce || !user.authNonceIssuedAt) {
+      return res.status(400).json({
+        success: false,
+        message: 'No active challenge for this wallet'
+      });
+    }
+
+    const expiresAt = new Date(user.authNonceIssuedAt.getTime() + NONCE_TTL_MINUTES * 60000);
+    if (new Date() > expiresAt) {
+      return res.status(400).json({
+        success: false,
+        message: 'Challenge expired, request a new one'
+      });
+    }
+
+    const expectedMessage = buildMessage(walletAddress, user.authNonce, user.authNonceIssuedAt.toISOString());
+    if (message !== expectedMessage) {
+      return res.status(400).json({
+        success: false,
+        message: 'Challenge message mismatch'
+      });
+    }
+
+    const signatureUint8 = bs58.decode(signature);
+    const messageUint8 = new TextEncoder().encode(message);
+    const publicKeyUint8 = bs58.decode(walletAddress);
+
+    const verified = nacl.sign.detached.verify(
+      messageUint8,
+      signatureUint8,
+      publicKeyUint8
+    );
+
+    if (!verified) {
+      return res.status(401).json({
+        success: false,
+        message: 'Invalid signature'
+      });
+    }
+
+    user.authNonce = null;
+    user.authNonceIssuedAt = null;
+    await user.updateActivity();
+
+    const token = issueToken(walletAddress);
+
+    res.json({
+      success: true,
+      token,
+      user: {
+        walletAddress: user.walletAddress,
+        username: user.username,
+        totalReports: user.totalReports,
+        verifiedReports: user.verifiedReports,
+        totalEarned: user.totalEarned,
+        reputationScore: user.reputationScore,
+        badges: user.badges,
+        joinedAt: user.joinedAt
+      }
+    });
+  } catch (error) {
+    console.error('Verify error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Signature verification failed',
+      error: error.message
+    });
+  }
+});
 
 // Register or get user by wallet
 router.post('/login', async (req, res) => {

@@ -2,7 +2,7 @@ require('dotenv').config();
 const express = require('express');
 const cors = require('cors');
 const connectDB = require('./config/db');
-const { authRoutes, reportRoutes, transactionRoutes } = require('./routes');
+const { authRoutes, reportRoutes, transactionRoutes, webhookRoutes } = require('./routes');
 const { initializeUmi, treasuryKeypair } = require('./services/solana');
 
 const app = express();
@@ -37,6 +37,7 @@ app.get('/health', (req, res) => {
 app.use('/api/auth', authRoutes);
 app.use('/api/reports', reportRoutes);
 app.use('/api/transactions', transactionRoutes);
+app.use('/api/webhooks', webhookRoutes);
 
 app.get('/api/reports/:id/metadata', async (req, res) => {
   try {

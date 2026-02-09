@@ -26,10 +26,8 @@ export const shortenAddress = (address, chars = 4) => {
 };
 
 export const getExplorerUrl = (signature, type = 'tx') => {
-  const baseUrl = NETWORK === 'devnet' 
-    ? 'https://explorer.solana.com'
-    : `https://explorer.solana.com?cluster=${NETWORK}`;
-  return `${baseUrl}/${type}/${signature}`;
+  const clusterParam = NETWORK === 'mainnet-beta' ? '' : `?cluster=${NETWORK}`;
+  return `https://explorer.solana.com/${type}/${signature}${clusterParam}`;
 };
 
 export const requestAirdrop = async (publicKey) => {

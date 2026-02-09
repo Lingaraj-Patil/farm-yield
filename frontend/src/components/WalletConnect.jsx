@@ -6,33 +6,75 @@
 import { useState, useEffect } from 'react';
 import { WalletMultiButton } from '@solana/wallet-adapter-react-ui';
 import { useWallet } from '@solana/wallet-adapter-react';
-import { Wallet, TrendingUp } from 'lucide-react';
+import { Wallet, TrendingUp, Lock } from 'lucide-react';
 import { getBalance } from '../utils/solana';
 import { authAPI, setWalletHeader } from '../utils/api';
+import { requestChallenge, verifyAndLogin, signMessage, clearToken, getToken } from '../utils/authJWT';
 
 const WalletConnect = () => {
-  const { publicKey, connected } = useWallet();
+  const wallet = useWallet();
+  const { publicKey, connected, signMessage: walletSignMessage } = wallet;
   const [balance, setBalance] = useState(0);
   const [user, setUser] = useState(null);
+  const [authenticating, setAuthenticating] = useState(false);
+
+  const performSignatureAuth = async (walletAddress) => {
+    if (!walletSignMessage || !publicKey) {
+      console.warn('Wallet does not support signing; skipping JWT auth');
+      return false;
+    }
+
+    try {
+      setAuthenticating(true);
+
+      const challengeData = await requestChallenge(walletAddress);
+      const { message } = challengeData;
+
+      const signature = await signMessage(wallet, message);
+
+      const result = await verifyAndLogin(walletAddress, signature, message);
+
+      if (result.success) {
+        setUser(result.user);
+        return true;
+      }
+      return false;
+    } catch (error) {
+      console.error('Signature auth failed:', error);
+      return false;
+    } finally {
+      setAuthenticating(false);
+    }
+  };
 
   useEffect(() => {
     if (connected && publicKey) {
       const walletAddress = publicKey.toString();
-      
-      // Set wallet header for API calls
+
       setWalletHeader(walletAddress);
-      
-      // Login/register user
-      authAPI.login(walletAddress)
-        .then(res => setUser(res.data.user))
-        .catch(err => console.error('Login failed:', err));
-      
-      // Get balance
+
+      const token = getToken();
+      if (token) {
+        authAPI.getProfile(walletAddress)
+          .then(res => setUser(res.data.user))
+          .catch(() => {
+            clearToken();
+            performSignatureAuth(walletAddress);
+          });
+      } else {
+        performSignatureAuth(walletAddress).catch(() => {
+          authAPI.login(walletAddress)
+            .then(res => setUser(res.data.user))
+            .catch(err => console.error('Login failed:', err));
+        });
+      }
+
       getBalance(walletAddress)
         .then(bal => setBalance(bal))
         .catch(err => console.error('Balance fetch failed:', err));
     } else {
       setWalletHeader(null);
+      clearToken();
       setUser(null);
       setBalance(0);
     }
@@ -40,7 +82,14 @@ const WalletConnect = () => {
 
   return (
     <div className="flex items-center gap-4">
-      {connected && user && (
+      {authenticating && (
+        <div className="flex items-center gap-2 text-sm text-gray-600">
+          <Lock className="w-4 h-4 animate-pulse" />
+          Authenticating...
+        </div>
+      )}
+
+      {connected && user && !authenticating && (
         <div className="hidden md:flex items-center gap-4 bg-white rounded-lg px-4 py-2 shadow">
           <div className="text-right">
             <p className="text-xs text-gray-500">Balance</p>
@@ -66,4 +115,3 @@ const WalletConnect = () => {
 };
 
 export default WalletConnect;
-

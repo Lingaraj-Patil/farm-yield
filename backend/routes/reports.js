@@ -10,9 +10,29 @@ const multer = require('multer');
 const Report = require('../models/Report');
 const User = require('../models/User');
 const Transaction = require('../models/Transaction');
+const Vote = require('../models/Vote');
 const { verifyWallet } = require('../middleware/auth');
+const { PublicKey } = require('@solana/web3.js');
 const { uploadToIPFS } = require('../services/ipfs');
-const { mintReportCNFT, sendReward, treasuryKeypair } = require('../services/solana');
+const { mintReportCNFT, sendReward, treasuryKeypair, awardBadge } = require('../services/solana');
+
+const TOP_CONTRIBUTOR_THRESHOLD = 25;
+
+const awardUserBadge = async (user, badgeType) => {
+  if (!user) return;
+  if (user.badges?.some(badge => badge.type === badgeType)) return;
+
+  const signature = await awardBadge(user.walletAddress, badgeType);
+
+  if (!signature) {
+    user.badges.push({
+      type: badgeType,
+      earnedAt: new Date(),
+      cnftMint: null
+    });
+    await user.save();
+  }
+};
 
 // Configure multer for memory storage
 const upload = multer({ 
@@ -95,6 +115,10 @@ router.post('/submit', verifyWallet, upload.array('images', 5), async (req, res)
     if (user) {
       user.totalReports += 1;
       await user.save();
+
+      if (user.totalReports === 1) {
+        await awardUserBadge(user, 'first_report');
+      }
     }
 
     // Mint cNFT in background (don't wait)
@@ -283,6 +307,23 @@ router.get('/', async (req, res) => {
   }
 });
 
+// Get aggregated map data
+router.get('/map/data', async (req, res) => {
+  try {
+    const data = await Report.getAggregatedData();
+    res.json({
+      success: true,
+      data
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: 'Failed to fetch map data',
+      error: error.message
+    });
+  }
+});
+
 // Get single report by ID
 router.get('/:id', async (req, res) => {
   try {
@@ -292,6 +333,22 @@ router.get('/:id', async (req, res) => {
       return res.status(404).json({
         success: false,
         message: 'Report not found'
+      });
+    }
+
+    try {
+      const reportOwner = new PublicKey(report.farmerWallet.trim());
+      const voter = new PublicKey(voterWallet.trim());
+      if (reportOwner.equals(voter)) {
+        return res.status(403).json({
+          success: false,
+          message: 'You cannot vote on your own report'
+        });
+      }
+    } catch (error) {
+      return res.status(400).json({
+        success: false,
+        message: 'Invalid wallet address'
       });
     }
 
@@ -311,7 +368,7 @@ router.get('/:id', async (req, res) => {
 // Vote on report (mock verification)
 router.post('/:id/vote', verifyWallet, async (req, res) => {
   try {
-    const { voteType, comment } = req.body; // voteType: 'approve' or 'reject'
+    const { voteType, comment, txSignature } = req.body; // voteType: 'approve' or 'reject'
     const voterWallet = req.walletAddress;
     const reportId = req.params.id;
 
@@ -343,12 +400,48 @@ router.post('/:id/vote', verifyWallet, async (req, res) => {
       });
     }
 
-    // Add vote
+    // Add vote to report
     report.verification.voters.push({
       wallet: voterWallet,
       vote: voteType,
       votedAt: new Date()
     });
+
+    // Persist vote record
+    try {
+      await Vote.create({
+        reportId: report._id,
+        voterWallet,
+        voteType,
+        comment,
+        txSignature: txSignature || null
+      });
+    } catch (voteError) {
+      if (voteError.code !== 11000) {
+        console.warn('Vote persistence warning:', voteError.message);
+      }
+    }
+
+    // Store vote transaction if signature provided
+    if (txSignature) {
+      await Transaction.findOneAndUpdate(
+        { txSignature },
+        {
+          txSignature,
+          type: 'vote',
+          fromWallet: voterWallet,
+          toWallet: report.farmerWallet,
+          reportId: report._id,
+          metadata: {
+            cropType: report.cropType,
+            description: `Vote ${voteType} for report ${report.reportId}`
+          },
+          status: 'confirmed',
+          blockTime: new Date()
+        },
+        { upsert: true, new: true }
+      );
+    }
 
     if (voteType === 'approve') {
       report.verification.votes.approve += 1;
@@ -367,6 +460,14 @@ router.post('/:id/vote', verifyWallet, async (req, res) => {
         user.verifiedReports += 1;
         user.calculateReputation();
         await user.save();
+
+        if (user.verifiedReports === 10) {
+          await awardUserBadge(user, 'verified_10');
+        }
+
+        if (user.totalReports >= TOP_CONTRIBUTOR_THRESHOLD) {
+          await awardUserBadge(user, 'top_contributor');
+        }
       }
 
       // Send reward in background

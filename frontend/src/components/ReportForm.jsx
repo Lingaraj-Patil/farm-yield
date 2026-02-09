@@ -5,8 +5,10 @@
 
 import { useState } from 'react';
 import { useWallet } from '@solana/wallet-adapter-react';
-import { Upload, MapPin, Image as ImageIcon } from 'lucide-react';
+import { useEffect } from 'react';
+import { Upload, MapPin, Image as ImageIcon, CloudOff, CloudUpload } from 'lucide-react';
 import { reportAPI } from '../utils/api';
+import { enqueueReport, getQueueCount, processQueue } from '../utils/offlineQueue';
 
 const CROP_TYPES = [
   'wheat', 'rice', 'cotton', 'sugarcane', 'maize', 
@@ -19,6 +21,7 @@ const ReportForm = ({ onSuccess }) => {
   const { connected, publicKey } = useWallet();
   const [loading, setLoading] = useState(false);
   const [images, setImages] = useState([]);
+  const [queueCount, setQueueCount] = useState(0);
   const [formData, setFormData] = useState({
     cropType: 'wheat',
     quantity: '',
@@ -28,8 +31,20 @@ const ReportForm = ({ onSuccess }) => {
     district: '',
     province: '',
     village: '',
+    soilType: '',
+    irrigation: '',
+    harvestDate: '',
     marketPrice: '',
   });
+
+  const refreshQueueCount = async () => {
+    const count = await getQueueCount();
+    setQueueCount(count);
+  };
+
+  useEffect(() => {
+    refreshQueueCount();
+  }, []);
 
   const handleChange = (e) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
@@ -94,6 +109,9 @@ const ReportForm = ({ onSuccess }) => {
         district: '',
         province: '',
         village: '',
+        soilType: '',
+        irrigation: '',
+        harvestDate: '',
         marketPrice: '',
       });
       setImages([]);
@@ -102,7 +120,14 @@ const ReportForm = ({ onSuccess }) => {
       
     } catch (error) {
       console.error('Submit error:', error);
-      alert('Failed to submit report: ' + (error.response?.data?.message || error.message));
+
+      if (!navigator.onLine || !error.response) {
+        await enqueueReport({ formData, images });
+        await refreshQueueCount();
+        alert('You are offline. Report saved and will be submitted automatically when online.');
+      } else {
+        alert('Failed to submit report: ' + (error.response?.data?.message || error.message));
+      }
     } finally {
       setLoading(false);
     }
@@ -260,6 +285,33 @@ const ReportForm = ({ onSuccess }) => {
         />
       </div>
 
+      {/* Optional Agronomy Info */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <input
+          type="text"
+          name="soilType"
+          value={formData.soilType}
+          onChange={handleChange}
+          placeholder="Soil Type (Optional)"
+          className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500"
+        />
+        <input
+          type="text"
+          name="irrigation"
+          value={formData.irrigation}
+          onChange={handleChange}
+          placeholder="Irrigation (Optional)"
+          className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500"
+        />
+        <input
+          type="date"
+          name="harvestDate"
+          value={formData.harvestDate}
+          onChange={handleChange}
+          className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500"
+        />
+      </div>
+
       {/* Images */}
       <div>
         <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -280,6 +332,30 @@ const ReportForm = ({ onSuccess }) => {
             className="hidden"
           />
         </label>
+      </div>
+
+      {/* Offline Queue */}
+      <div className="bg-gray-50 rounded-lg p-4 flex items-center justify-between">
+        <div className="flex items-center gap-2 text-sm text-gray-600">
+          {queueCount > 0 ? <CloudOff className="w-4 h-4" /> : <CloudUpload className="w-4 h-4" />}
+          {queueCount > 0
+            ? `${queueCount} report(s) queued for sync.`
+            : 'No queued reports.'}
+        </div>
+        <button
+          type="button"
+          onClick={async () => {
+            const result = await processQueue();
+            await refreshQueueCount();
+            if (result.processed > 0) {
+              alert(`Synced ${result.processed} report(s).`);
+            }
+          }}
+          className="px-3 py-2 text-xs font-semibold bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+          disabled={!navigator.onLine || queueCount === 0}
+        >
+          Sync now
+        </button>
       </div>
 
       {/* Submit */}

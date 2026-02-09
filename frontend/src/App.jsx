@@ -3,21 +3,37 @@
 // Main Application Component
 // ===================================
 
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { ConnectionProvider, WalletProvider } from '@solana/wallet-adapter-react';
 import { WalletAdapterNetwork } from '@solana/wallet-adapter-base';
 import { PhantomWalletAdapter, SolflareWalletAdapter } from '@solana/wallet-adapter-wallets';
 import { WalletModalProvider } from '@solana/wallet-adapter-react-ui';
 import { clusterApiUrl } from '@solana/web3.js';
-import { Sprout, Map, FileText, Plus } from 'lucide-react';
+import { Sprout, Map, FileText, Plus, Home, User } from 'lucide-react';
 import WalletConnect from './components/WalletConnect';
 import ReportForm from './components/ReportForm';
 import MapDashboard from './components/MapDashboard';
 import ReportList from './components/ReportList';
+import LandingPage from './components/LandingPage';
+import ProfileDashboard from './components/ProfileDashboard';
 import '@solana/wallet-adapter-react-ui/styles.css';
+import { processQueue } from './utils/offlineQueue';
 
 function App() {
-  const [activeTab, setActiveTab] = useState('form');
+  const [activeTab, setActiveTab] = useState('home');
+
+  if (typeof window !== 'undefined') {
+    const phantomProvider = window?.phantom?.solana;
+    const injectedProvider = window?.solana;
+
+    if (
+      phantomProvider?.isPhantom &&
+      injectedProvider?.isBraveWallet &&
+      injectedProvider !== phantomProvider
+    ) {
+      window.solana = phantomProvider;
+    }
+  }
 
   // Solana network setup
   const network = WalletAdapterNetwork.Devnet;
@@ -31,10 +47,23 @@ function App() {
     [network]
   );
 
+  useEffect(() => {
+    const handleOnline = () => {
+      processQueue().catch((error) => console.error('Queue sync failed:', error));
+    };
+
+    window.addEventListener('online', handleOnline);
+    handleOnline();
+
+    return () => window.removeEventListener('online', handleOnline);
+  }, []);
+
   const tabs = [
+    { id: 'home', label: 'Home', icon: Home },
     { id: 'form', label: 'Submit Report', icon: Plus },
     { id: 'reports', label: 'All Reports', icon: FileText },
     { id: 'map', label: 'Map View', icon: Map },
+    { id: 'profile', label: 'Profile', icon: User },
   ];
 
   return (
@@ -85,9 +114,11 @@ function App() {
 
             {/* Content */}
             <main className="container mx-auto px-4 pb-12">
+              {activeTab === 'home' && <LandingPage onGetStarted={() => setActiveTab('form')} />}
               {activeTab === 'form' && <ReportForm onSuccess={() => setActiveTab('reports')} />}
               {activeTab === 'reports' && <ReportList />}
               {activeTab === 'map' && <MapDashboard />}
+              {activeTab === 'profile' && <ProfileDashboard />}
             </main>
 
             {/* Footer */}

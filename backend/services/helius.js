@@ -77,7 +77,10 @@ const createWebhook = async (webhookURL, accountAddresses, transactionTypes = ['
         webhookURL,
         accountAddresses,
         transactionTypes,
-        webhookType: 'enhanced'
+        webhookType: 'enhanced',
+        authHeader: process.env.HELIUS_WEBHOOK_AUTH_TOKEN
+          ? `Bearer ${process.env.HELIUS_WEBHOOK_AUTH_TOKEN}`
+          : undefined
       },
       {
         params: { 'api-key': HELIUS_API_KEY }

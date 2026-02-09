@@ -5,6 +5,7 @@
 // ===================================
 
 import axios from 'axios';
+import { getToken } from './authJWT';
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5001/api';
 
@@ -16,7 +17,7 @@ const api = axios.create({
   withCredentials: false,
 });
 
-// Add wallet address to requests
+// Add wallet address or JWT token to requests
 export const setWalletHeader = (walletAddress) => {
   if (walletAddress) {
     api.defaults.headers.common['x-wallet-address'] = walletAddress;
@@ -24,6 +25,15 @@ export const setWalletHeader = (walletAddress) => {
     delete api.defaults.headers.common['x-wallet-address'];
   }
 };
+
+// Attach token if available
+api.interceptors.request.use((config) => {
+  const token = getToken();
+  if (token) {
+    config.headers.Authorization = `Bearer ${token}`;
+  }
+  return config;
+});
 
 // Auth endpoints
 export const authAPI = {

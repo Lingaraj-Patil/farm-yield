@@ -7,5 +7,6 @@
 module.exports = {
   authRoutes: require('./auth'),
   reportRoutes: require('./reports'),
-  transactionRoutes: require('./transaction')
+  transactionRoutes: require('./transaction'),
+  webhookRoutes: require('./webhooks')
 };

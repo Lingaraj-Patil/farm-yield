@@ -31,6 +31,11 @@ const Report = require('../models/Report');
 const User = require('../models/User');
 const TxModel = require('../models/Transaction');
 
+const BASE_URL =
+  process.env.PUBLIC_BASE_URL ||
+  process.env.APP_BASE_URL ||
+  `http://localhost:${process.env.PORT || 5001}`;
+
 // Initialize Solana connection
 const connection = new Connection(
   process.env.HELIUS_API_KEY 
@@ -232,7 +237,7 @@ const mintReportCNFT = async (reportId, farmerWallet, metadata) => {
     const nftMetadata = {
       name: `${metadata.cropType.toUpperCase()} Report - ${reportId.slice(0, 8)}`,
       symbol: 'FARMYLD',
-      uri: `https://farmyield.app/api/reports/${reportId}/metadata`,
+      uri: `${BASE_URL}/api/reports/${reportId}/metadata`,
       sellerFeeBasisPoints: percentAmount(0),
       collection: null,
       creators: [

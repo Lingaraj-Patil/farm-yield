@@ -4,7 +4,7 @@
 // ===================================
 
 import { useState, useEffect } from 'react';
-import { MapContainer, TileLayer, Marker, Popup, useMap } from 'react-leaflet';
+import { MapContainer, TileLayer, Marker, Popup, CircleMarker } from 'react-leaflet';
 import { MapPin, TrendingUp, Package } from 'lucide-react';
 import { reportAPI } from '../utils/api';
 import 'leaflet/dist/leaflet.css';
@@ -35,7 +35,7 @@ const MapDashboard = () => {
   const fetchReports = async () => {
     setLoading(true);
     try {
-      const params = { status: 'verified', limit: 200 };
+      const params = { limit: 200 };
       if (selectedCrop !== 'all') params.cropType = selectedCrop;
 
       const response = await reportAPI.getAll(params);
@@ -126,8 +126,8 @@ const MapDashboard = () => {
           </div>
         ) : (
           <MapContainer
-            center={[30.3753, 69.3451]} // Pakistan center
-            zoom={6}
+            center={[15.3173, 75.7139]} // Karnataka center
+            zoom={7}
             style={{ height: '100%', width: '100%' }}
           >
              <TileLayer
@@ -140,45 +140,57 @@ const MapDashboard = () => {
               url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
             /> */}
             
-            {reports.map((report) => (
-              <Marker
-                key={report._id}
-                position={[
-                  report.location.coordinates[1],
-                  report.location.coordinates[0]
-                ]}
-              >
-                <Popup>
-                  <div className="p-2">
-                    <h3 className="font-bold text-lg mb-2">
-                      {report.cropType.toUpperCase()}
-                    </h3>
-                    <p className="text-sm mb-1">
-                      <strong>Quantity:</strong> {report.quantity.value} {report.quantity.unit}
-                    </p>
-                    <p className="text-sm mb-1">
-                      <strong>Location:</strong> {report.location.address.district}, {report.location.address.province}
-                    </p>
-                    <p className="text-sm mb-1">
-                      <strong>Status:</strong> 
-                      <span className={`ml-1 px-2 py-1 rounded text-xs ${
-                        report.status === 'verified' ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'
-                      }`}>
-                        {report.status}
-                      </span>
-                    </p>
-                    {report.metadata.marketPrice && (
+            {reports.map((report) => {
+              if (!report.location?.coordinates?.length) return null;
+              const position = [
+                report.location.coordinates[1],
+                report.location.coordinates[0]
+              ];
+              const statusColor = report.status === 'verified' ? '#16a34a' : report.status === 'pending' ? '#f59e0b' : '#ef4444';
+
+              return (
+                <CircleMarker
+                  key={report._id}
+                  center={position}
+                  radius={8}
+                  pathOptions={{ color: statusColor, fillColor: statusColor, fillOpacity: 0.8 }}
+                >
+                  <Popup>
+                    <div className="p-2">
+                      <h3 className="font-bold text-lg mb-2">
+                        {report.cropType.toUpperCase()}
+                      </h3>
                       <p className="text-sm mb-1">
-                        <strong>Price:</strong> PKR {report.metadata.marketPrice}/{report.quantity.unit}
+                        <strong>Quantity:</strong> {report.quantity.value} {report.quantity.unit}
                       </p>
-                    )}
-                    <p className="text-xs text-gray-500 mt-2">
-                      Report ID: {report.reportId}
-                    </p>
-                  </div>
-                </Popup>
-              </Marker>
-            ))}
+                      <p className="text-sm mb-1">
+                        <strong>Location:</strong> {report.location.address.district}, {report.location.address.province}
+                      </p>
+                      <p className="text-sm mb-1">
+                        <strong>Status:</strong>
+                        <span className={`ml-1 px-2 py-1 rounded text-xs ${
+                          report.status === 'verified'
+                            ? 'bg-green-100 text-green-800'
+                            : report.status === 'pending'
+                              ? 'bg-yellow-100 text-yellow-800'
+                              : 'bg-red-100 text-red-800'
+                        }`}>
+                          {report.status}
+                        </span>
+                      </p>
+                      {report.metadata.marketPrice && (
+                        <p className="text-sm mb-1">
+                          <strong>Price:</strong> PKR {report.metadata.marketPrice}/{report.quantity.unit}
+                        </p>
+                      )}
+                      <p className="text-xs text-gray-500 mt-2">
+                        Report ID: {report.reportId}
+                      </p>
+                    </div>
+                  </Popup>
+                </CircleMarker>
+              );
+            })}
           </MapContainer>
         )}
       </div>

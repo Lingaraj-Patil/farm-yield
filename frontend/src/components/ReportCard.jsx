@@ -12,6 +12,7 @@ import { getExplorerUrl, shortenAddress } from '../utils/solana';
 const ReportCard = ({ report, onVote }) => {
   const { connected, publicKey } = useWallet();
   const [voting, setVoting] = useState(false);
+  const isOwner = connected && publicKey && report.farmerWallet && publicKey.toString().trim() === report.farmerWallet.trim();
 
   const handleVote = async (voteType) => {
     if (!connected) {
@@ -131,7 +132,7 @@ const ReportCard = ({ report, onVote }) => {
         )}
 
         {/* Actions */}
-        {report.status === 'pending' && connected && (
+        {report.status === 'pending' && connected && !isOwner && (
           <div className="flex gap-2">
             <button
               onClick={() => handleVote('approve')}
@@ -149,6 +150,12 @@ const ReportCard = ({ report, onVote }) => {
               <ThumbsDown className="w-4 h-4" />
               Reject
             </button>
+          </div>
+        )}
+
+        {report.status === 'pending' && connected && isOwner && (
+          <div className="text-center text-sm text-gray-500">
+            You cannot vote on your own report.
           </div>
         )}
 

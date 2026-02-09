@@ -14,7 +14,7 @@ const transactionSchema = new mongoose.Schema({
   },
   type: {
     type: String,
-    enum: ['mint_cnft', 'reward', 'vote', 'badge'],
+    enum: ['mint_cnft', 'reward', 'vote', 'badge', 'unknown'],
     required: true,
   },
   fromWallet: String,

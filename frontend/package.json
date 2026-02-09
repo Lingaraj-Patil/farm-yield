@@ -16,6 +16,8 @@
     "@solana/wallet-adapter-wallets": "^0.19.37",
     "@solana/web3.js": "^1.98.4",
     "@tailwindcss/vite": "^4.1.16",
+    "axios": "^1.7.9",
+    "bs58": "^6.0.0",
     "lucide-react": "^0.548.0",
     "react": "^19.1.1",
     "react-dom": "^19.1.1",

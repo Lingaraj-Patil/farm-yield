@@ -5,27 +5,48 @@
 
 const nacl = require('tweetnacl');
 const bs58 = require('bs58');
+const jwt = require('jsonwebtoken');
 
-// Simple wallet verification middleware
+const getBearerToken = (req) => {
+  const header = req.headers.authorization || '';
+  if (!header.startsWith('Bearer ')) return null;
+  return header.replace('Bearer ', '').trim();
+};
+
+// JWT or wallet header authentication
 const verifyWallet = async (req, res, next) => {
   try {
+    const token = getBearerToken(req);
+
+    if (token && process.env.JWT_SECRET) {
+      try {
+        const decoded = jwt.verify(token, process.env.JWT_SECRET);
+        req.walletAddress = decoded.walletAddress;
+        return next();
+      } catch (error) {
+        return res.status(401).json({
+          success: false,
+          message: 'Invalid or expired token'
+        });
+      }
+    }
+
     const walletAddress = req.headers['x-wallet-address'];
-    
+
     if (!walletAddress) {
-      return res.status(401).json({ 
-        success: false, 
-        message: 'Wallet address required' 
+      return res.status(401).json({
+        success: false,
+        message: 'Authorization required'
       });
     }
 
-    // Attach wallet to request
     req.walletAddress = walletAddress;
     next();
   } catch (error) {
-    res.status(401).json({ 
-      success: false, 
+    res.status(401).json({
+      success: false,
       message: 'Authentication failed',
-      error: error.message 
+      error: error.message
     });
   }
 };

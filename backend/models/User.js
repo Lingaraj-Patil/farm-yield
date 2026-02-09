@@ -57,6 +57,14 @@ const userSchema = new mongoose.Schema({
     earnedAt: Date,
     cnftMint: String, // cNFT mint address for badge
   }],
+  authNonce: {
+    type: String,
+    default: null,
+  },
+  authNonceIssuedAt: {
+    type: Date,
+    default: null,
+  },
 }, {
   timestamps: true,
 });
