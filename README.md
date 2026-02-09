@@ -23,14 +23,16 @@
 
 ## 🌍 Problem Statement
 
-Agriculture employs **40% of Pakistan's workforce**, yet small farmers in rural areas face critical challenges:
-
-- **Lack of Market Data**: Farmers have no access to real-time crop yield information, leading to price exploitation by middlemen
-- **Information Asymmetry**: Agricultural departments lack ground-level data for policy decisions
-- **Subsidy Distribution**: Difficulty in identifying genuine farmers for government aid programs
-- **Market Inefficiency**: No transparent pricing mechanisms based on actual supply data
-
-**Result**: Small farmers in regions like Khyber Pakhtunkhwa and rural Punjab are trapped in cycles of poverty despite producing essential crops.
+Agriculture employs ~42–45% of India’s workforce, yet small and marginal farmers face critical challenges:
+-- **Lack of Market Transparency
+-- **Farmers often lack access to real-time mandi price data, leading to exploitation by middlemen.
+-- **Fragmented Agricultural Data
+-- **Agricultural departments lack reliable ground-level yield data for policymaking.
+-- **Subsidy & Scheme Leakages
+-- **Difficulty identifying genuine farmers for schemes like PM-KISAN, crop insurance, and fertilizer subsidies.
+-- **Supply Chain Inefficiency
+-- **No transparent mechanism to predict supply gluts or shortages.
+**Result**: Farmers in regions like Punjab, Maharashtra, Karnataka, Uttar Pradesh, and Bihar often sell crops below fair value despite strong production.
 
 ---
 
